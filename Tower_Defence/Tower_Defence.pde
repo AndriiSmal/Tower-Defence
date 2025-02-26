@@ -11,12 +11,11 @@ final color BASIC_TOWER_COLOR = #2196F3;
 final color SNIPER_TOWER_COLOR = #FFC107;
 final int BASIC_TOWER_COST = 50;
 final int SNIPER_TOWER_COST = 100;
-final int[] UPGRADE_COSTS = {100, 200, 400};
 final int[] BASIC_TOWER_UPGRADE_COSTS = {100, 200, 400, 0};
 final int[] SNIPER_TOWER_UPGRADE_COSTS = {150, 250, 450, 0};
 final int[] BASIC_TOWER_SELL_COSTS = {35, 105, 245, 525};
 final int[] SNIPER_TOWER_SELL_COSTS = {70, 175, 350, 665};
-int currentTowerType = 0; // 0 = Basic, 1 = Sniper
+int currentTowerType; // 0 = Basic, 1 = Sniper
 Tower selectedTower = null;
 boolean keyRState = false;
 PVector[] pathPoints = {
@@ -38,7 +37,7 @@ void setup() {
   grid = new int[width/40][height/40]; // Griglia 20x15
   wave = 0;
   lives = 10;
-  money = 1000;
+  money = 100;
   placingTower = false;
   
   grid[3][7] = 1;
@@ -91,7 +90,7 @@ void drawGameOverScreen() {
   textSize(24);
   text("Punteggio finale: " + (score), width/2, height/2 - 20);
   
-  // Disegna pulsante "Rigioca"
+  // Retry button
   if (showRetryButton) {
     fill(100);
     rect(width/2 - BUTTON_WIDTH/2, height/2 + 20, BUTTON_WIDTH, BUTTON_HEIGHT, 10);
@@ -99,7 +98,7 @@ void drawGameOverScreen() {
     textSize(20);
     text("Rigioca", width/2, height/2 + 40);
     
-    // Pulsante "Esci"
+    // Exit button
     fill(100);
     rect(width/2 - BUTTON_WIDTH/2, height/2 + 80, BUTTON_WIDTH, BUTTON_HEIGHT, 10);
     fill(255);
@@ -109,7 +108,7 @@ void drawGameOverScreen() {
 
 void mousePressed() {
   if (gameOver) {
-    // Controlla clic sui pulsanti
+    // controls pressing 
     if (mouseX > width/2 - BUTTON_WIDTH/2 && mouseX < width/2 + BUTTON_WIDTH/2) {
       if (mouseY > height/2 + 20 && mouseY < height/2 + 20 + BUTTON_HEIGHT) {
         resetGame();
@@ -121,9 +120,10 @@ void mousePressed() {
   } 
   else if (mouseButton == LEFT && placingTower) {
       Tower t = currentTowerType == 0 ? 
-      new BasicTower(mouseX, mouseY) :
+      new BasicTower(mouseX, mouseY) : 
       new SniperTower(mouseX, mouseY);
       if(isValidPosition(t) && money >= t.cost) {
+        
           towers.add(t);
           money -= t.cost;
           placingTower = false;
@@ -181,21 +181,21 @@ void drawGrid() {
 void drawPath() {
   int roadWidth = 80;
 
-  // Disegna la base della strada con angoli retti
+  // Start and end of the road
   noStroke();
   fill(50);
   for(int i = 0; i < pathPoints.length-1; i++) {
     PVector start = pathPoints[i];
     PVector end = pathPoints[i+1];
     
-    // Segmento principale
+    // Main road segment 
     if(start.x == end.x) { // Verticale
       rect(start.x-roadWidth/2, min(start.y, end.y), roadWidth, abs(end.y-start.y));
     } else { // Orizzontale
       rect(min(start.x, end.x), start.y-roadWidth/2, abs(end.x-start.x), roadWidth);
     }
     
-    // Angolo a 90 gradi
+    // 90° angle
     if(i < pathPoints.length-2) {
       PVector next = pathPoints[i+2];
       if((start.x == end.x && end.y == next.y) || (start.y == end.y && end.x == next.x)) {
@@ -204,7 +204,7 @@ void drawPath() {
     }
   }
 
-  // Linea tratteggiata centrale (esistente)
+  // draw center line
   stroke(255); 
   strokeWeight(2);
   float dashLength = 15, gapLength = 15;
@@ -325,7 +325,7 @@ void drawHUD() {
   text("1 - Basic ("+BASIC_TOWER_COST+"$)", width-150, height-45);
   text("2 - Sniper ("+SNIPER_TOWER_COST+"$)", width-150, height-25);
   
-  // Draws Selected tower info textbox
+  // Draws info textbox of selected tower 
   if(selectedTower != null) {
     if(selectedTower.type == 0){
       fill(200, 200);

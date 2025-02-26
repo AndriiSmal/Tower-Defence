@@ -7,10 +7,11 @@ abstract class Tower {
   int cost;
   int type;
   
-  Tower(float x, float y, int c, int type) {
+  public Tower(float x, float y, int cost, int type) {
     pos = new PVector(x, y);
-    cost = c;
-    level = 1;
+    level = 0;
+    this.cost = cost;
+    this.type = type;
   }
   
   abstract void upgrade();
@@ -24,6 +25,8 @@ abstract class Tower {
       cooldown = getCooldown();
     }
   }
+  
+
   
   Enemy findTarget() {
     Enemy target = null;

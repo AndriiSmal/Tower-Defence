@@ -1,11 +1,13 @@
-class SniperTower extends Tower {
+public class SniperTower extends Tower {
+  private int triangleArea = 15;
   SniperTower(float x, float y) {
-    super(x, y, 100);
+    super(x, y, 100, 1);
     range = 200;
     damage = 3;
+    
   }
   
-  void update() {
+  public void update() {
     if (cooldown > 0) cooldown--;
     
     Enemy target = findTarget();
@@ -14,20 +16,25 @@ class SniperTower extends Tower {
     }
   }
   
-  void display() {
+  public void display() {
     fill(255, 200, 0);
-    triangle(pos.x-15, pos.y+15, pos.x+15, pos.y+15, pos.x, pos.y-15);
+    triangle(pos.x-triangleArea, pos.y+triangleArea, pos.x+triangleArea, pos.y+triangleArea, pos.x, pos.y-triangleArea);
+    if(mouseX >= pos.x - triangleArea && mouseX <= pos.x + triangleArea && mouseY >= pos.y - triangleArea && mouseY <= pos.y + triangleArea){
+    fill(0, 0);
+    ellipse(pos.x, pos.y, range*2, range*2);
+    }
   }
   
-  void upgrade() {
-    if(level < 3) {
+  public void upgrade() {
+    if(level < 3 && money >= SNIPER_TOWER_UPGRADE_COSTS[level]) {
+      money -= SNIPER_TOWER_UPGRADE_COSTS[level];
       level++;
       range *= 1.3;
       damage += 2;
     }
   }
   
-  void sell(){
+  public void sell(){
     money += SNIPER_TOWER_SELL_COSTS[level];
   }
   
