@@ -25,7 +25,7 @@ public class BasicTower extends Tower {
   }
   
   public void upgrade() {
-    if(level < 4 && money >= BASIC_TOWER_UPGRADE_COSTS[level]) {
+    if(level < 3 && money >= BASIC_TOWER_UPGRADE_COSTS[level]) {
       money -= BASIC_TOWER_UPGRADE_COSTS[level];
       level++;
       range *= 1.2;

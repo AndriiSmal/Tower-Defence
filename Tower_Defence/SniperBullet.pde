@@ -11,10 +11,6 @@ void update() {
       
       if (PVector.dist(pos, target.pos) < 10) {
         target.health -= damage;
-        // Colpisce fino a 3 nemici
-        for(int i = 0; i < 3 && i < enemies.size(); i++) {
-          enemies.get(i).health -= damage;
-        }
         bullets.remove(this);
       }
     }

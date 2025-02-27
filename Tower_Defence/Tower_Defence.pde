@@ -1,12 +1,14 @@
 ArrayList<Enemy> enemies;
 ArrayList<Tower> towers;
 ArrayList<Bullet> bullets;
+ArrayList<Enemy> waitingEnemies;
 int[][] grid;
 int wave;
 boolean placingTower;
 int lives;
 int money;
 int score;
+int spawnDelay;
 final color BASIC_TOWER_COLOR = #2196F3;
 final color SNIPER_TOWER_COLOR = #FFC107;
 final int BASIC_TOWER_COST = 50;
@@ -22,23 +24,31 @@ PVector[] pathPoints = {
     new PVector(3*40, 15*40),
     new PVector(3*40, 3*40),
     new PVector(12*40, 3*40),
-    new PVector(12*40, 12*40)
+    new PVector(12*40, 12*40),
+    new PVector(20*40, 12*40)
   };
 boolean gameOver = false;
 boolean showRetryButton = false;
 final int BUTTON_WIDTH = 120;
 final int BUTTON_HEIGHT = 40;
+FinalScore finalScore;
+String inputName = "";
+boolean enteringName = false;
+int finalScoreValue = 0;
   
 void setup() {
   size(800, 600);
   enemies = new ArrayList<Enemy>();
   towers = new ArrayList<Tower>();
   bullets = new ArrayList<Bullet>();
-  grid = new int[width/40][height/40]; // Griglia 20x15
+  waitingEnemies = new ArrayList<Enemy>();
+  grid = new int[width/40][height/40];
   wave = 0;
   lives = 10;
   money = 100;
   placingTower = false;
+  finalScore = new FinalScore();
+  spawnDelay = 15;
   
   grid[3][7] = 1;
   grid[3][3] = 1;
@@ -63,7 +73,7 @@ void draw() {
   drawHUD();
   
   if(keyRState){
-    frameRate(240);
+    frameRate(360);
   }else{
     frameRate(60);
   }
@@ -75,6 +85,7 @@ void draw() {
   if (lives <= 0) {
       gameOver = true;
       showRetryButton = true;
+      finalScoreValue = score + money;
     }
   } else {
     drawGameOverScreen();
@@ -90,8 +101,16 @@ void drawGameOverScreen() {
   textSize(24);
   text("Punteggio finale: " + (score), width/2, height/2 - 20);
   
+  if(enteringName) {
+    text("Enter your name:", width/2, 500);
+    text(inputName + (frameCount%60 < 30 ? "_" : ""), width/2, 550);
+    finalScore.display();
+  } else {
+    text("Press ENTER to continue", width/2, 450);
+  }
   // Retry button
   if (showRetryButton) {
+    textAlign(CENTER, CENTER);
     fill(100);
     rect(width/2 - BUTTON_WIDTH/2, height/2 + 20, BUTTON_WIDTH, BUTTON_HEIGHT, 10);
     fill(255);
@@ -103,6 +122,8 @@ void drawGameOverScreen() {
     rect(width/2 - BUTTON_WIDTH/2, height/2 + 80, BUTTON_WIDTH, BUTTON_HEIGHT, 10);
     fill(255);
     text("Esci", width/2, height/2 + 100);
+    
+    
   }
 }
 
@@ -145,7 +166,26 @@ void mousePressed() {
 }
 
 void keyPressed() {
-  if(key == '1') {
+  if(gameOver) {
+    if(enteringName) {
+      if(key == ENTER || key == RETURN) {
+        if(inputName.length() > 0) {
+          finalScore.addScore(inputName, finalScoreValue);
+          resetGame();
+        }
+      } else if(key == BACKSPACE) {
+        if(inputName.length() > 0) {
+          inputName = inputName.substring(0, inputName.length()-1);
+        }
+      } else if(key >= 'A' && key <= 'Z' || key >= 'a' && key <= 'z' || key == ' ') {
+        inputName += key;
+      }
+    } else {
+      if(key == ENTER || key == RETURN) {
+        enteringName = true;
+      }
+    }
+  } else if(key == '1') {
     currentTowerType = 0;
     placingTower = !placingTower;
   }
@@ -247,11 +287,14 @@ void spawnWave(int w) {
       spawnTimer--;
     }
     enemySpawnCoefficient *= 2;
+    if(w % 100 == 0) waveSize+=1;
   }
 }
 
 void resetGame() {
   gameOver = false;
+  enteringName = false;
+  inputName = "";
   showRetryButton = false;
   lives = 10;
   money = 100;
@@ -262,6 +305,11 @@ void resetGame() {
   bullets.clear();
   frameCount = 60;
 }
+void exit(){
+  finalScore.saveScores();
+  super.exit();
+}
+
 
 void handleEnemies() {
   for (int i = enemies.size() - 1; i >= 0; i--) {
@@ -269,7 +317,7 @@ void handleEnemies() {
     e.update();
     e.display();
 
-    if (e.health <= 0 || e.pathIndex >= 4) {
+    if (e.health <= 0 || e.pathIndex >= 5) {
       if (e.health <= 0) {
         money += 10;
         score += 1;
@@ -347,6 +395,17 @@ void drawHUD() {
       text("Press S key to sell ("+SNIPER_TOWER_SELL_COSTS[selectedTower.level]+"$)", 30, height-20);
     }  
   }
+  fill(200, 225);
+  rect(width-40*6, height-40*14, 220, 340);
+  fill(0);
+  textAlign(CENTER);
+  textSize(19);
+  text("Tutorial:", width-130, height-40*13);
+  textSize(18);
+  text(" '1' to place basic tower.", width-130, height-40*12);
+  text(" '2' to place sniper tower.", width-130, height-40*11);
+  text(" 'LMB' for tower placing.", width-130, height-40*10);
+  
 }
 
 boolean isValidPosition(Tower t) {

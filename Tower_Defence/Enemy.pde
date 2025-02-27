@@ -35,10 +35,11 @@ class Enemy {
  PVector getNextPathPoint() {
     // Mappa semplificata del percorso
     switch(pathIndex) {
-      case 0: return new PVector(3*40, 7*40);
+      case 0: return new PVector(3*40, 15*40);
       case 1: return new PVector(3*40, 3*40);
       case 2: return new PVector(12*40, 3*40);
       case 3: return new PVector(12*40, 12*40);
+      case 4: return new PVector(20*40, 12*40);
       default: return pos.copy();
     }
   }

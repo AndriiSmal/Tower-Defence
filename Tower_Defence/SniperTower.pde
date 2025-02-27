@@ -3,7 +3,7 @@ public class SniperTower extends Tower {
   SniperTower(float x, float y) {
     super(x, y, 100, 1);
     range = 200;
-    damage = 3;
+    damage = 4;
     
   }
   
