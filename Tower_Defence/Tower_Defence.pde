@@ -5,10 +5,14 @@ ArrayList<Enemy> waitingEnemies;
 int[][] grid;
 int wave;
 boolean placingTower;
+boolean toggleTutorial = true;
 int lives;
 int money;
 int score;
 int spawnDelay;
+int spawnTimer;
+int waveSize;
+int statsEnhancer;
 final color BASIC_TOWER_COLOR = #2196F3;
 final color SNIPER_TOWER_COLOR = #FFC107;
 final int BASIC_TOWER_COST = 50;
@@ -19,7 +23,7 @@ final int[] BASIC_TOWER_SELL_COSTS = {35, 105, 245, 525};
 final int[] SNIPER_TOWER_SELL_COSTS = {70, 175, 350, 665};
 int currentTowerType; // 0 = Basic, 1 = Sniper
 Tower selectedTower = null;
-boolean keyRState = false;
+boolean toggleGameSpeed = false;
 PVector[] pathPoints = {
     new PVector(3*40, 15*40),
     new PVector(3*40, 3*40),
@@ -43,17 +47,13 @@ void setup() {
   bullets = new ArrayList<Bullet>();
   waitingEnemies = new ArrayList<Enemy>();
   grid = new int[width/40][height/40];
-  wave = 0;
+  wave = 1;
   lives = 10;
   money = 100;
   placingTower = false;
   finalScore = new FinalScore();
-  spawnDelay = 15;
+  spawnDelay = 45;
   
-  grid[3][7] = 1;
-  grid[3][3] = 1;
-  grid[12][3] = 1;
-  grid[12][12] = 1;
 }
 
 void draw() {
@@ -61,36 +61,40 @@ void draw() {
   background(#018525);
   
   drawGrid();
-  
   drawPath();
   
   handleEnemies();
-  
   handleBullets();
-  
   handleTowers();
  
+  spawnEnemies();
   drawHUD();
   
-  if(keyRState){
-    frameRate(360);
+  if(toggleGameSpeed){
+    frameRate(300);
   }else{
     frameRate(60);
   }
   
-  if (frameCount % 120 == 0) {
+  if (enemies.isEmpty() && waitingEnemies.isEmpty() && frameCount % 600 == 0) {
     spawnWave(wave);
     wave++;
+    statsEnhancer = wave * 6;
   }
   if (lives <= 0) {
       gameOver = true;
       showRetryButton = true;
-      finalScoreValue = score + money;
+      finalScoreValue = score;
     }
   } else {
     drawGameOverScreen();
   }
+  if(placingTower){
+    if(currentTowerType == 0) drawBasicTowerGhost();
+    else if (currentTowerType == 1) drawSniperTowerGhost();
+  }
 }
+
 
 void drawGameOverScreen() {
   background(0);
@@ -197,11 +201,14 @@ void keyPressed() {
     selectedTower.upgrade();
   }
   else if(key == 'r') {
-    keyRState = !keyRState;
+    toggleGameSpeed = !toggleGameSpeed;
   }
   else if (key == 's' && selectedTower != null) {
     selectedTower.sell();
     towers.remove(selectedTower);
+  }
+  else if (key == 't'){
+    toggleTutorial = !toggleTutorial; 
   }
 }
 
@@ -262,34 +269,24 @@ void drawPath() {
 }
 
 void spawnWave(int w) {
-  float enemySpawnCoefficient = 5;
-  int enemiesToSpawn = 0;
-  int spawnTimer = 0;
-  int spawnDelay = (int)random(0, 5); // 15 frame (0.25 sec a 60 FPS)
-  int waveSize = 1;
-  waveSize = w * (int)enemySpawnCoefficient; // Numero totale di nemici per onda
-  enemiesToSpawn = waveSize;
-  
-  if (enemiesToSpawn > 0) {
-    if (spawnTimer <= 0) {
-      // Scegli tipo di nemico casuale
-      float r = random(1);
-      if (r < 0.1) { // 10% nemici resistenti
-        enemies.add(new Enemy(0.3, 20, 30, color(255, 100, 0)));
-      } else if (r < 0.3) { // 20% nemici veloci
-        enemies.add(new Enemy(1.0, 5, 20, color(0, 255, 0)));
-      } else { // 70% nemici normali
-        enemies.add(new Enemy(0.5, 10, 10, color(255, 0, 0)));
-      }
-      enemiesToSpawn--;
-      spawnTimer = spawnDelay;
-    } else {
-      spawnTimer--;
-    }
-    enemySpawnCoefficient *= 2;
-    if(w % 100 == 0) waveSize+=1;
+  waveSize = w * 5;
+  for(int i = 0; i <= waveSize; i++) {
+    if (i % 15 == 0) waitingEnemies.add(new BossEnemy());
+    else if(i % 10 == 0) waitingEnemies.add(new TankEnemy());
+    else if(i % 5 == 0) waitingEnemies.add(new FastEnemy());
+    else waitingEnemies.add(new BasicEnemy());
   }
 }
+
+void spawnEnemies() {
+  if (!waitingEnemies.isEmpty() && spawnTimer <= 0) {
+    enemies.add(waitingEnemies.remove(0));
+    spawnTimer = spawnDelay;
+  } else {
+    spawnTimer--;
+  }
+}
+
 
 void resetGame() {
   gameOver = false;
@@ -300,6 +297,7 @@ void resetGame() {
   money = 100;
   wave = 1;
   score = 0;
+  statsEnhancer = 0;
   enemies.clear();
   towers.clear();
   bullets.clear();
@@ -312,17 +310,17 @@ void exit(){
 
 
 void handleEnemies() {
-  for (int i = enemies.size() - 1; i >= 0; i--) {
+  for(int i = enemies.size()-1; i >= 0; i--) {
     Enemy e = enemies.get(i);
     e.update();
     e.display();
-
-    if (e.health <= 0 || e.pathIndex >= 5) {
-      if (e.health <= 0) {
-        money += 10;
-        score += 1;
-      } else {
-        lives = max(0, lives - 1); // Impedisce vite negative
+    
+    if(e.health <= 0 || e.pathIndex >= 5) {
+      if(e.health <= 0){ 
+        money += e.reward;
+        score++;
+      }else{ 
+        lives--;
       }
       enemies.remove(i);
     }
@@ -345,15 +343,39 @@ void handleBullets() {
   }
 }
 
+void drawBasicTowerGhost() {
+  fill(0, 150, 255, 100);
+  stroke(255, 100);
+  rect(mouseX-15, mouseY-15, 30, 30);
+  fill(0, 0);
+  ellipse(mouseX, mouseY, 100 * 2, 100 * 2);
+}
+
+void drawSniperTowerGhost(){
+  fill(255, 200, 0, 100);
+  stroke(255, 100);
+  triangle(mouseX-15, mouseY+15, mouseX+15, mouseY+15, mouseX, mouseY-15);
+  fill(0, 0);
+  ellipse(mouseX, mouseY, 150*2, 150*2);
+}
+
 void drawHUD() {
+  fill(200, 225);
+  rect(width-796, height-596, 500, 40);
   fill(0);
   textSize(18);
   textAlign(BASELINE);
-  text("Life: " + lives, 20, 30);
-  text("Money: $" + money, 20, 60);
-  text("Wave: " + wave, 20, 90);
-  text("Score: " + score, 20, 120);
+  text("Life: " + lives, 10, 30);
+  text("Money: $" + money, 40*3, 30);
+  text("Wave: " + wave, 40*7, 30);
+  text("Score: " + score, 40*10, 30);
   if (placingTower) {
+    fill(200, 225);
+    rect(width-160, height-80, 140, 60);
+    fill(0);
+    text("Towers:", width-130, height-65);
+    text("Basic ("+BASIC_TOWER_COST+"$)", width-130, height-45);
+    text("Sniper ("+SNIPER_TOWER_COST+"$)", width-130, height-25);
     if(currentTowerType == 0){
       fill(200, 225);
       rect(width-290, height-596, 280, 40);
@@ -366,12 +388,6 @@ void drawHUD() {
       text("Place sniper tower (left mouse click)", width-280, 30);
     }
   }
-  fill(200, 225);
-  rect(width-160, height-80, 140, 60);
-  fill(0);
-  text("Towers:", width-150, height-65);
-  text("1 - Basic ("+BASIC_TOWER_COST+"$)", width-150, height-45);
-  text("2 - Sniper ("+SNIPER_TOWER_COST+"$)", width-150, height-25);
   
   // Draws info textbox of selected tower 
   if(selectedTower != null) {
@@ -395,17 +411,24 @@ void drawHUD() {
       text("Press S key to sell ("+SNIPER_TOWER_SELL_COSTS[selectedTower.level]+"$)", 30, height-20);
     }  
   }
-  fill(200, 225);
-  rect(width-40*6, height-40*14, 220, 340);
-  fill(0);
-  textAlign(CENTER);
-  textSize(19);
-  text("Tutorial:", width-130, height-40*13);
-  textSize(18);
-  text(" '1' to place basic tower.", width-130, height-40*12);
-  text(" '2' to place sniper tower.", width-130, height-40*11);
-  text(" 'LMB' for tower placing.", width-130, height-40*10);
-  
+  if(toggleTutorial){
+    fill(200, 225);
+    rect(width-250, height-550, 240, 240);
+    fill(0);
+    textAlign(CENTER);
+    textSize(19);
+    text("Tutorial:", width-130, height-525);
+    textSize(18);
+    text(" '1' for basic tower positioning.", width-130, height-500);
+    text(" '2' for sniper tower positioning.", width-130, height-475);
+    text(" 'LMB' to place tower.", width-130, height-450);
+    text(" 'RMB' to select tower.", width-130, height-425);
+    text("  'U' to upgrade selected tower.", width-130, height-400);
+    text("'S' to sell selected tower.", width-130, height-375);
+    text("'R' to change game speed.", width-130, height-350);
+    text(" 'T' to show/hide tutorial.", width-130, height-325);
+    
+  }
 }
 
 boolean isValidPosition(Tower t) {

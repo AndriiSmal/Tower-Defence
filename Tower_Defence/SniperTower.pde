@@ -2,8 +2,8 @@ public class SniperTower extends Tower {
   private int triangleArea = 15;
   SniperTower(float x, float y) {
     super(x, y, 100, 1);
-    range = 200;
-    damage = 4;
+    range = 150;
+    damage = 2;
     
   }
   
@@ -29,7 +29,7 @@ public class SniperTower extends Tower {
     if(level < 3 && money >= SNIPER_TOWER_UPGRADE_COSTS[level]) {
       money -= SNIPER_TOWER_UPGRADE_COSTS[level];
       level++;
-      range *= 1.3;
+      range *= 1.1;
       damage += 2;
     }
   }

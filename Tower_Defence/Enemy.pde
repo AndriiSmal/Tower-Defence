@@ -1,4 +1,4 @@
-class Enemy {
+abstract class Enemy {
   PVector pos;
   float speed;
   int health;
@@ -16,26 +16,19 @@ class Enemy {
   }
   
   void update() {
-    // Segui il percorso
     PVector target = getNextPathPoint();
     PVector dir = PVector.sub(target, pos);
     dir.setMag(speed);
     pos.add(dir);
     
-    if (PVector.dist(pos, target) < 2) {
-      pathIndex++;
-    }
+    if (PVector.dist(pos, target) < 2) pathIndex++;
   }
   
-  void display() {
-    fill(col);
-    ellipse(pos.x, pos.y, 20, 20);
-  }
+  abstract void display();
   
- PVector getNextPathPoint() {
-    // Mappa semplificata del percorso
+  PVector getNextPathPoint() {
     switch(pathIndex) {
-      case 0: return new PVector(3*40, 15*40);
+      case 0: return new PVector(3*40, 7*40);
       case 1: return new PVector(3*40, 3*40);
       case 2: return new PVector(12*40, 3*40);
       case 3: return new PVector(12*40, 12*40);
