@@ -27,7 +27,7 @@ Top 5 best scores are placed in file 'scores.txt'. You can see it also at 'game 
 
 ### UML
 
-![TowerDefence](https://assets/images/TowerDefence.png)
+![TowerDefence](TowerDefence.png)
 
 ## Instruments used
 * Processing (4.3.3)
